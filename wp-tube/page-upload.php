@@ -38,9 +38,21 @@ $categories = get_terms(array(
         </div>
         
         <div class="form-group">
-            <label for="video_url"><?php _e('Video URL *', 'wp-tube'); ?></label>
-            <input type="url" name="video_url" id="video_url" required placeholder="<?php esc_attr_e('YouTube URL, Vimeo URL, or direct video file URL', 'wp-tube'); ?>"/>
-            <small><?php _e('Supported: YouTube, Vimeo, Dailymotion, or MP4/WebM files', 'wp-tube'); ?></small>
+            <label for="video_file"><?php _e('Video File *', 'wp-tube'); ?></label>
+            <div class="video-upload-wrapper">
+                <input type="hidden" name="video_file" id="video_file" value="" required />
+                <button type="button" class="button upload-video-btn" id="upload-video-btn">
+                    <?php _e('Select Video File', 'wp-tube'); ?>
+                </button>
+                <div id="video-preview" class="video-preview" style="display:none;">
+                    <p class="filename"></p>
+                    <progress id="upload-progress" value="0" max="100" style="width: 100%; display: none;"></progress>
+                    <button type="button" class="button remove-video-btn" id="remove-video-btn">
+                        <?php _e('Remove', 'wp-tube'); ?>
+                    </button>
+                </div>
+            </div>
+            <small><?php _e('Upload your video file directly (MP4, WebM, Ogg). Max size depends on server settings.', 'wp-tube'); ?></small>
         </div>
         
         <div class="form-group">
@@ -72,6 +84,48 @@ $categories = get_terms(array(
 
 <script>
 jQuery(document).ready(function($) {
+    var mediaUploader;
+    
+    // Handle video file upload
+    $('#upload-video-btn').on('click', function(e) {
+        e.preventDefault();
+        
+        if (mediaUploader) {
+            mediaUploader.open();
+            return;
+        }
+        
+        mediaUploader = wp.media({
+            title: '<?php _e('Choose Video File', 'wp-tube'); ?>',
+            button: {
+                text: '<?php _e('Use this video', 'wp-tube'); ?>'
+            },
+            library: {
+                type: ['video/mp4', 'video/webm', 'video/ogg']
+            },
+            multiple: false
+        });
+        
+        mediaUploader.on('select', function() {
+            var attachment = mediaUploader.state().get('selection').first().toJSON();
+            $('#video_file').val(attachment.url);
+            $('#video-preview .filename').text(attachment.title);
+            $('#video-preview').show();
+            $('#upload-video-btn').hide();
+        });
+        
+        mediaUploader.open();
+    });
+    
+    // Remove selected video
+    $('#remove-video-btn').on('click', function(e) {
+        e.preventDefault();
+        $('#video_file').val('');
+        $('#video-preview').hide();
+        $('#upload-video-btn').show();
+    });
+    
+    // Handle form submission with file upload
     $('#video-upload-form').on('submit', function(e) {
         e.preventDefault();
         
@@ -85,22 +139,38 @@ jQuery(document).ready(function($) {
             data: formData,
             processData: false,
             contentType: false,
+            xhr: function() {
+                var xhr = new window.XMLHttpRequest();
+                xhr.upload.addEventListener('progress', function(evt) {
+                    if (evt.lengthComputable) {
+                        var percentComplete = evt.loaded / evt.total * 100;
+                        $('#upload-progress').val(percentComplete).show();
+                    }
+                }, false);
+                return xhr;
+            },
             beforeSend: function() {
-                $('#upload-status').show().html('<?php _e('Uploading...', 'wp-tube'); ?>');
+                $('#upload-status').show().html('<?php _e('Uploading video...', 'wp-tube'); ?>');
+                $('#upload-progress').show();
             },
             success: function(response) {
                 if (response.success) {
                     $('#upload-status').html('<div style="color: green;">' + response.data.message + '</div>');
                     $('#video-upload-form')[0].reset();
+                    $('#video-preview').hide();
+                    $('#upload-video-btn').show();
+                    $('#upload-progress').hide();
                     setTimeout(function() {
                         window.location.href = '<?php echo home_url('/?post_type=video'); ?>';
                     }, 2000);
                 } else {
                     $('#upload-status').html('<div style="color: red;">' + response.data.message + '</div>');
+                    $('#upload-progress').hide();
                 }
             },
             error: function() {
                 $('#upload-status').html('<div style="color: red;"><?php _e('Upload failed. Please try again.', 'wp-tube'); ?></div>');
+                $('#upload-progress').hide();
             }
         });
     });
