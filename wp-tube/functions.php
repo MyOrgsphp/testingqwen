@@ -30,6 +30,9 @@ function wp_tube_scripts() {
     wp_enqueue_style('wp-tube-style', get_stylesheet_uri());
     wp_enqueue_script('wp-tube-main', get_template_directory_uri() . '/assets/js/main.js', array('jquery'), '1.0', true);
     
+    // Enqueue WordPress media uploader for video upload
+    wp_enqueue_media();
+    
     // Localize script for AJAX
     wp_localize_script('wp-tube-main', 'wpTubeAjax', array(
         'ajaxurl' => admin_url('admin-ajax.php'),
@@ -508,12 +511,12 @@ function wp_tube_handle_frontend_upload() {
     
     $title = sanitize_text_field($_POST['video_title']);
     $description = sanitize_textarea_field($_POST['video_description']);
-    $video_url = sanitize_textarea_field($_POST['video_url']);
+    $video_file = sanitize_text_field($_POST['video_file']);
     $duration = sanitize_text_field($_POST['video_duration']);
     $category = intval($_POST['video_category']);
     
-    if (!$title || !$video_url) {
-        wp_send_json_error(array('message' => __('Title and video URL are required', 'wp-tube')));
+    if (!$title || !$video_file) {
+        wp_send_json_error(array('message' => __('Title and video file are required', 'wp-tube')));
     }
     
     $post_data = array(
@@ -530,7 +533,7 @@ function wp_tube_handle_frontend_upload() {
         wp_send_json_error(array('message' => $video_id->get_error_message()));
     }
     
-    update_post_meta($video_id, '_video_url', $video_url);
+    update_post_meta($video_id, '_video_url', $video_file);
     update_post_meta($video_id, '_video_duration', $duration);
     update_post_meta($video_id, '_video_views', 0);
     update_post_meta($video_id, '_video_likes', 0);

@@ -1,4 +1,12 @@
-```
+```php
+# WordPress specific ignores
+wp-content/cache/
+wp-content/uploads/
+wp-config.php
+wp-content/upgrade/
+*.sql
+*.log
+
 # Dependencies
 node_modules/
 vendor/
@@ -6,19 +14,16 @@ vendor/
 # Build artifacts
 dist/
 build/
-*.min.js
 *.min.css
-*.bundle.js
-
-# Logs
-*.log
+*.min.js
+*.map
 
 # Environment
 .env
 .env.local
 .env.*
 
-# Editor
+# Editor/IDE
 .vscode/
 .idea/
 *.swp
@@ -29,8 +34,6 @@ build/
 .DS_Store
 Thumbs.db
 
-# WordPress specific
-wp-content/cache/
-*.sql
-wp-config-local.php
+# Logs
+*.log
 ```
